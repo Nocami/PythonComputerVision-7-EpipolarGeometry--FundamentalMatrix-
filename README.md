@@ -48,4 +48,270 @@ RANSAN算法可以用来消除错误匹配的的点，找到基础矩阵F，算�
 其中，p1、p2和p3是矩阵P的三行，上面的式子可以写得更紧凑，如所示 : Mv=0   
 然后，我们可以使用SVD分解估计出照相机矩阵。  
 # 五.实例
+## 1).室外普通场景：
+特征：  
+![image](15.jpg)  
+八点法求得F：  
+![image](16.jpg)  
+红框为所得基础矩阵：  
+![image](17.jpg)  
+三维点和照相机矩阵：  
+![image](18.jpg)  
+阈值为le^-3级别  
+![image](19.jpg)
 
+## 2).室外复杂场景：
+特征：  
+![image](20.jpg)  
+八点法求得F：  
+![image](21.jpg)  
+红框为所得基础矩阵：  
+![image](22.jpg)  
+三维点和照相机矩阵：  
+![image](23.jpg)  
+阈值为le^-1级别  
+![image](24.jpg)
+
+## 3).室内场景：
+特征：  
+![image](25.jpg)  
+八点法求得F：  
+![image](26.jpg)  
+红框为所得基础矩阵：  
+![image](27.jpg)  
+三维点和照相机矩阵：  
+![image](28.jpg)  
+阈值为le^-1级别  
+![image](29.jpg)
+## 4).分析
+通过三组不同场景图像的对比，我们可以做出基本判断：  
+在室外普通场景下，匹配到的特征点数量多，可以以较高的精度（阈值级别较小）用八点法计算出基础矩阵以及三维点相机矩阵；  
+面对室外较复杂场景时，精度大大下降；在处理室内图片数据集时，甚至出现了不能正确计算的情况，效果较差。  
+# 六.源码及说明
+~~~python
+# coding: utf-8
+
+# In[1]:
+from pylab import *
+from PIL import Image
+
+# If you have PCV installed, these imports should work
+from PCV.geometry import homography, camera, sfm
+from PCV.localdescriptors import sift
+from PIL import Image
+from numpy import *
+from pylab import *
+import numpy as np
+
+
+# In[2]:
+
+#import camera
+#import homography
+#import sfm
+#import sift
+camera = reload(camera)
+homography = reload(homography)
+sfm = reload(sfm)
+sift = reload(sift)
+
+
+# In[3]:
+
+# Read features
+im1 = array(Image.open('images/1.jpg'))
+sift.process_image('images/1.jpg', 'im1.sift')
+
+im2 = array(Image.open('images/2.jpg'))
+sift.process_image('images/2.jpg', 'im2.sift')
+
+
+# In[4]:
+
+l1, d1 = sift.read_features_from_file('im1.sift')
+l2, d2 = sift.read_features_from_file('im2.sift')
+
+
+# In[5]:
+
+matches = sift.match_twosided(d1, d2)
+
+
+# In[6]:
+
+ndx = matches.nonzero()[0]
+x1 = homography.make_homog(l1[ndx, :2].T)
+ndx2 = [int(matches[i]) for i in ndx]
+x2 = homography.make_homog(l2[ndx2, :2].T)
+
+d1n = d1[ndx]
+d2n = d2[ndx2]
+x1n = x1.copy()
+x2n = x2.copy()
+
+
+# In[7]:
+
+figure(figsize=(16,16))
+sift.plot_matches(im1, im2, l1, l2, matches, True)
+show()
+
+
+# In[26]:
+
+#def F_from_ransac(x1, x2, model, maxiter=5000, match_threshold=1e-6):
+def F_from_ransac(x1, x2, model, maxiter=5000, match_threshold=1e-6):
+    """ Robust estimation of a fundamental matrix F from point
+    correspondences using RANSAC (ransac.py from
+    http://www.scipy.org/Cookbook/RANSAC).
+
+    input: x1, x2 (3*n arrays) points in hom. coordinates. """
+
+    from PCV.tools import ransac
+    data = np.vstack((x1, x2))
+    d = 10 # 20 is the original
+    # compute F and return with inlier index
+    F, ransac_data = ransac.ransac(data.T, model,
+                                   8, maxiter, match_threshold, d, return_all=True)
+    return F, ransac_data['inliers']
+
+
+# In[27]:
+
+# find F through RANSAC
+model = sfm.RansacModel()
+F, inliers = F_from_ransac(x1n, x2n, model, maxiter=5000, match_threshold=1e-1)
+print F
+
+
+# In[28]:
+
+P1 = array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]])
+P2 = sfm.compute_P_from_fundamental(F)
+
+
+# In[29]:
+
+print P2
+print F
+
+
+# In[30]:
+
+# P2, F (1e-4, d=20)
+# [[ -1.48067422e+00   1.14802177e+01   5.62878044e+02   4.74418238e+03]
+#  [  1.24802182e+01  -9.67640761e+01  -4.74418113e+03   5.62856097e+02]
+#  [  2.16588305e-02   3.69220292e-03  -1.04831621e+02   1.00000000e+00]]
+# [[ -1.14890281e-07   4.55171451e-06  -2.63063628e-03]
+#  [ -1.26569570e-06   6.28095242e-07   2.03963649e-02]
+#  [  1.25746499e-03  -2.19476910e-02   1.00000000e+00]]
+
+
+# In[31]:
+
+# triangulate inliers and remove points not in front of both cameras
+X = sfm.triangulate(x1n[:, inliers], x2n[:, inliers], P1, P2)
+
+
+# In[32]:
+
+# plot the projection of X
+cam1 = camera.Camera(P1)
+cam2 = camera.Camera(P2)
+x1p = cam1.project(X)
+x2p = cam2.project(X)
+
+
+# In[33]:
+
+figure(figsize=(16, 16))
+imj = sift.appendimages(im1, im2)
+imj = vstack((imj, imj))
+
+imshow(imj)
+
+cols1 = im1.shape[1]
+rows1 = im1.shape[0]
+for i in range(len(x1p[0])):
+    if (0<= x1p[0][i]<cols1) and (0<= x2p[0][i]<cols1) and (0<=x1p[1][i]<rows1) and (0<=x2p[1][i]<rows1):
+        plot([x1p[0][i], x2p[0][i]+cols1],[x1p[1][i], x2p[1][i]],'c')
+axis('off')
+show()
+
+
+# In[34]:
+
+d1p = d1n[inliers]
+d2p = d2n[inliers]
+
+
+# In[35]:
+
+# Read features
+im3 = array(Image.open('images/3.jpg'))
+sift.process_image('images/3.jpg', 'im3.sift')
+l3, d3 = sift.read_features_from_file('im3.sift')
+
+
+# In[36]:
+
+matches13 = sift.match_twosided(d1p, d3)
+
+
+# In[37]:
+
+ndx_13 = matches13.nonzero()[0]
+x1_13 = homography.make_homog(x1p[:, ndx_13])
+ndx2_13 = [int(matches13[i]) for i in ndx_13]
+x3_13 = homography.make_homog(l3[ndx2_13, :2].T)
+
+
+# In[38]:
+
+figure(figsize=(16, 16))
+imj = sift.appendimages(im1, im3)
+imj = vstack((imj, imj))
+
+imshow(imj)
+
+cols1 = im1.shape[1]
+rows1 = im1.shape[0]
+for i in range(len(x1_13[0])):
+    if (0<= x1_13[0][i]<cols1) and (0<= x3_13[0][i]<cols1) and (0<=x1_13[1][i]<rows1) and (0<=x3_13[1][i]<rows1):
+        plot([x1_13[0][i], x3_13[0][i]+cols1],[x1_13[1][i], x3_13[1][i]],'c')
+axis('off')
+show()
+
+
+# In[39]:
+
+P3 = sfm.compute_P(x3_13, X[:, ndx_13])
+
+
+# In[40]:
+
+print P3
+
+
+# In[41]:
+
+print P1
+print P2
+print P3
+
+
+# In[22]:
+
+# Can't tell the camera position because there's no calibration matrix (K)
+
+
+~~~
+其中，In[27]：中的“match_threshold=1e-1”，即指阈值精度，可根据图片调整相应的精度。  
+代码运行于 python 2，所需库文件可以参考本人稍早前发布的"PythonComputerVision"系列博客。  
+  
+    
+### 特别说明：
+入境图片： JMU 集美大学  
+
+原理中部分参考： http://blog.sina.com.cn/s/blog_61cc74300102ys0x.html   https://blog.csdn.net/lhanchao/article/details/51834223  
+代码来源：  https://github.com/moizumi99/CVBookExercise/tree/master/Chapter-5  
