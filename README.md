@@ -1,5 +1,5 @@
 # PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-
-计算图像对的特征匹配，并估计基础矩阵。使用外极线作为第二个输入，通过在外极线上对每个特征点寻找最佳的匹配来找到更多的匹配。挑选一对图像，计算三维点和照相机矩阵。
+计算图像对的特征匹配，并估计基础矩阵。算出空间中对应的匹配点，求出投影矩阵。
 # 一.外极几何
 多视图几何--既是利用在不同视点所拍摄图像间的关系，来研究照相机之间或者特征之间的关系。如果有一个场景的两个视图以及视图中的对应图像点，那么根据照相机间的空间相对位置关系、照相机的性质以及三维场景点的位置，可以得到对这些图像点的一些几何关系约束。  
 三维场景点X经过4×4的单应性矩阵H变换为HX后，则HX在照相机PH^-1里得到的图像点和X在照相机P里得到的图像点相同。  
@@ -55,7 +55,7 @@ RANSAN算法可以用来消除错误匹配的的点，找到基础矩阵F，算�
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/16.jpg)  
 红框为所得基础矩阵：  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/17.jpg)  
-三维点和照相机矩阵：  
+点和投影矩阵：  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/18.jpg)  
 阈值为le^-3级别  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/19.jpg)
@@ -67,7 +67,7 @@ RANSAN算法可以用来消除错误匹配的的点，找到基础矩阵F，算�
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/21.jpg)  
 红框为所得基础矩阵：  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/22.jpg)  
-三维点和照相机矩阵：  
+点和投影矩阵：  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/23.jpg)  
 阈值为le^-1级别  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/24.jpg)
@@ -79,7 +79,7 @@ RANSAN算法可以用来消除错误匹配的的点，找到基础矩阵F，算�
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/26.jpg)  
 红框为所得基础矩阵：  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/27.jpg)  
-三维点和照相机矩阵：  
+点和投影矩阵：  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/28.jpg)  
 阈值为le^-1级别  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/29.jpg)
