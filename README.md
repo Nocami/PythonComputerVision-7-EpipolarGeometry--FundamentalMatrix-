@@ -83,7 +83,7 @@ RANSAN算法可以用来消除错误匹配的的点，找到基础矩阵F，算�
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/28.jpg)  
 阈值为le^-1级别  
 ![image](https://github.com/Nocami/PythonComputerVision-7-EpipolarGeometry--FundamentalMatrix-/blob/master/images/29.jpg)
-## 4).分析
+## 4).简述
 通过三组不同场景图像的对比，我们可以做出基本判断：  
 在室外普通场景下，匹配到的特征点数量多，可以以较高的精度（阈值级别较小）用八点法计算出基础矩阵以及三维点相机矩阵；  
 面对室外较复杂场景时，精度大大下降；在处理室内图片数据集时，甚至出现了不能正确计算的情况，效果较差。  
